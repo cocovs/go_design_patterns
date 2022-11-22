@@ -16,9 +16,12 @@ type singleton struct {
 
 //once 是线程安全的
 func GetInstance() *singleton {
+	//once.Do() 内的函数只能执行一次
+	//只有第一次才会执行创建单例
 	once.Do(func() {
 		instance = new(singleton)
 	})
+	//之后的都会直接返回单例
 	return instance
 }
 

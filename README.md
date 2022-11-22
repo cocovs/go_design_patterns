@@ -1,5 +1,4 @@
-# go_design_patterns
-设计模式
+# 设计模式
 
 ## 创建
 
@@ -263,17 +262,35 @@ func main() {
 
 ### 单例模式singleton*
 
-解决的问题：整个运行时域，一个类只有一个实例对象，并且该对象的功能依旧能被其他模块使用。
+**解决的问题：**整个运行时域，一个类只有一个实例对象，并且该对象的功能依旧能被其他模块使用。
 
-有的类比较庞大，频繁的销毁和创建将会造成不必要的性能浪费。（比如数据库链接对象）
-
-1.线程安全2.是不是懒加载3.能否反射破坏
-
-懒加载：第一次调用后才得到实例对象
+内部生成的单例对外部私有，只有通过对外部暴露的get方法才能获取该实例。
 
 
 
-饿汉式：
+由于有的类比较庞大，频繁的销毁和创建将会造成不必要的性能浪费。（比如数据库链接对象）因此需要单例模式，在系统中只存在一个可控对象，从而节约系统资源。
+
+
+
+优点:单例模式提供了对唯一实例的受控访问。在系统内存中只存在一个对象，节约了系统资源。
+
+缺点：单例类的职责过重，拓展略难
+
+
+
+
+
+
+
+
+
+> 饿汉式：
+
+初始化单例唯一指针时，就已经提前提前开辟好对象申请了内存。
+
+**好处**：不会出现多线程并发创建，导致多个单例的出现。
+
+**缺点**：无论该单例对象是否被使用，都会创建该单例对象。
 
 ```go
 package main
@@ -292,7 +309,7 @@ func (s *singleton) say() {
 var instance *singleton = new(singleton)
 
 //对外提供一个方法获取这个对象
-
+//去掉了写权限，只暴露读方法
 func GetInstance() *singleton {
 	return instance
 }
@@ -306,12 +323,66 @@ func main() {
 
 
 
+> 懒汉式：
 
-
-懒汉式：
+通过get方法获取单例对象，对get方法加锁从而避免并发下多次创建单例对象，第一次使用get方法会开辟对象并申请内存，之后使用将直接返回单例对象。
 
 ```go
+package main
 
+import (
+	"fmt"
+	"sync"
+)
+
+//定义一个锁
+//var lock sync.Mutex
+var once sync.Once
+
+var instance *singleton
+
+type singleton struct {
+}
+
+//once 是线程安全的
+func GetInstance() *singleton {
+	//once.Do() 内的函数只能执行一次
+	//只有第一次才会执行创建单例
+	once.Do(func() {
+		instance = new(singleton)
+	})
+	//之后的都会直接返回单例
+	return instance
+}
+
+
+func (s *singleton) Say() {
+	fmt.Println("hello")
+}
+
+func main() {
+	in := GetInstance()
+	in.Say()
+}
+```
+
+
+
+Once.Do()方法的源代码：
+
+```go
+func (o *Once) Do(f func()) {　　　//判断是否执行过该方法，如果执行过则不执行
+    if atomic.LoadUint32(&o.done) == 1 {
+        return
+    }
+    // Slow-path.
+    o.m.Lock()
+    defer o.m.Unlock()　　
+    if o.done == 0 {
+        defer atomic.StoreUint32(&o.done, 1)
+        f()
+    }
+}
 ```
 
 
@@ -328,11 +399,11 @@ func main() {
 
 代理模式为某个目标对象提供一个代理对象，并且由代理对象控制对目标对象的访问，代理模式用于**延迟处理操作或者在进行实际操作前后进行其它处理**。
 
-作用：
+> 作用：
 
 1. 代理模式在客户端和目标对象之间起到中介的作用和保护目标对象的作用
-2. 代理对象可以拓展目标对象的作用，只需要修改代理类不需要修改目标对象，符合开闭原则。并且如果需要修改目标对象，因为实现了接口，不需要修改代理类，同样符合开闭原则。
-3. 代理模式可以将客户端与目标对象分离，降低了系统耦合
+2. 代理对象可以**拓展目标对象的作用**，只需要修改代理类不需要修改目标对象，符合开闭原则。并且如果需要修改目标对象，因为实现了接口，不需要修改代理类，同样符合开闭原则。
+3. 代理模式可以**将客户端与目标对象分离，降低了系统耦合**
 
 
 
@@ -352,7 +423,7 @@ package main
 import "fmt"
 
 //代理模式
-//
+
 type Goods struct {
 	Kind string //商品种类
 	Fact bool   //商品的真伪
@@ -427,8 +498,8 @@ func main() {
 	var KShopping Shopping
 	KShopping = new(KoreaShopping)
 	//传入具体的shopping对象，得到代理
+    //将具体的类转换为代理类
 	var k_proxy Shopping
-	//将具体的类转换为代理类
 	k_proxy = NewProxy(KShopping)
 	//通过代理模式进行动作
 	k_proxy.Buy(&g1)
@@ -448,8 +519,10 @@ func main() {
 对: 韩国面膜 进行了辨别真伪。
 去韩国购物，买了： 韩国面膜
 对 韩国面膜  进行了海关检查
+
 对: 四级证书 进行了辨别真伪。
 发现假货: 四级证书  ,不应该购买
+
 对: 韩国面膜 进行了辨别真伪。
 去美国购物，买了： 韩国面膜
 对 韩国面膜  进行了海关检查
@@ -457,3 +530,100 @@ func main() {
 
 
 
+### 装饰器
+
+装饰器模式关注于在一个对象上动态的添加方法，然而代理模式关注于控制对对象的访问。
+
+当使用代理模式的时候，我们常常在一个代理类中创建一个对象的实例。并且，当我们使用装饰器模式的时候，我们通常的做法是将原始对象作为一个参数传给装饰者的构造器。
+
+优点：
+
+(1) 对于扩展一个对象的功能，装饰模式比继承更加灵活性，不会导致类的个数急剧增加。
+
+(2) 可以通过一种动态的方式来扩展一个对象的功能，从而实现不同的行为。
+
+(3) 可以对一个对象进行多次装饰。
+
+(4) 具体构件类与具体装饰类可以独立变化，用户可以根据需要增加新的具体构件类和具体装饰类，原有类库代码无须改变，符合“开闭原则”。
+
+缺点：
+
+(1) 使用装饰模式进行系统设计时将产生很多小对象，大量小对象的产生势必会占用更多的系统资源，影响程序的性能。
+
+(2) 装饰模式提供了一种比继承更加灵活机动的解决方案，但同时也意味着比继承更加易于出错，排错也很困难，对于多次装饰的对象，调试时寻找错误可能需要逐级排查，较为繁琐。
+
+```go
+package main
+
+import "fmt"
+
+type Phone interface {
+	Show() //构件的功能
+}
+
+//装饰器
+//包含具体被装饰的类
+type Decorator struct {
+	phone Phone
+}
+
+func (d *Decorator) Show() {}
+
+//实现层
+type Man struct{}
+
+func (*Man) Show() {
+	fmt.Println("this is man")
+}
+
+//具体的装饰器
+//继承装饰器基础类
+type GunDecorator struct {
+	Decorator
+}
+
+func (gun *GunDecorator) Show() {
+	gun.phone.Show()
+	fmt.Println("A man with a gun ")
+}
+
+func newGunDecorator(ph Phone) *GunDecorator {
+	return &GunDecorator{Decorator{ph}}
+}
+
+func main() {
+	//
+	var xiaoming Phone
+	xiaoming = new(Man)
+	xiaoming.Show()
+	fmt.Println("--------")
+	//加入装饰器
+	var gunMan Phone
+	gunMan = newGunDecorator(xiaoming)
+	gunMan.Show()
+
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 适配器模式
+
+
+
+
+
+
+
+### 外观模式*
