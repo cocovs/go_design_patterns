@@ -612,18 +612,202 @@ func main() {
 
 
 
-
-
-
-
-
-
 ### 适配器模式
 
+适配器模式是两个不兼容的接口之间的桥梁。
+
+比如在内存卡和笔记本之间，读卡器就是作为适配器的存在。再比如手机和220V电源之间的充电器。
+
+**解决的问题**：将一个类的接口转换成客户希望的另一个接口，适配器模式使得原本由于接口不兼容荣而不能一起工作的那些类可以一起工作。
+
+**优点：**
+
+* 将目标类和适配者解耦，通过引用一个适配器类来重用现在的适配者类，无需修改原有结构
+* 灵活性和拓展性好，可以在不更改原有代码的基础上增加新的适配者类，符合开闭原则
+* 提高了类的透明度，具体的业务实现过程封装在适配者类，对客户端类(业务层)而言是透明的
+* 提高了类的复用度，同一个适配者类可以在多个系统中复用
+
+**缺点：**
+
+* 过多的使用适配器，会让系统零乱
+* 代码阅读性差
 
 
 
+**目标（Target）接口**：当前系统业务所期待的接口，它可以是抽象类或接口。
+
+**适配者（Adaptee）类**：它是被访问和适配的现存组件库中的组件接口。
+
+**适配器（Adapter）类**：它是一个转换器，通过继承或引用适配者的对象，把适配者接口转换成目标接口，让客户按目标接口的格式访问适配者。
+
+
+
+
+
+```go
+package main
+
+import "fmt"
+
+//适配器模式
+
+//适配的目标，依赖v5接口
+type v5 interface {
+	Usev5()
+}
+
+//业务类
+type Phone struct {
+	//需要5v电压进行充电
+	v v5
+}
+
+//创建phone
+func newPhone(v v5) *Phone {
+	return &Phone{v}
+}
+
+//手机有充电方法
+//phone类中需要有实现了v5接口的类才可以使用Usev5方法
+func (p *Phone) charge() {
+	fmt.Println("进行充电")
+	p.v.Usev5()
+}
+
+//适配者（被适配的类）
+//220v交流电源
+type v220 struct {
+}
+
+func (*v220) charge() {
+	fmt.Println("220v")
+}
+
+//适配器
+//需要适配器将220v转换为5v,手机才能使用220v电压进行充电
+type Adapter struct {
+	v *v220
+}
+
+func newAdapter(v220 *v220) *Adapter {
+	return &Adapter{v220}
+}
+
+//适配器实现了v5接口
+//通过适配器将v220转换为v5
+func (a *Adapter) Usev5() {
+	fmt.Printf("适配器插入电源为： ")
+	a.v.charge()
+}
+
+func main() {
+	myphone := newPhone(newAdapter(new(v220)))
+	myphone.charge()
+}
+```
 
 
 
 ### 外观模式*
+
+也称门面模式，通过引入一个外观角色来简化客户端与子系统之间的交互，为复杂的子系统调用提供一个统一的入口，降低子系统与客户端的耦合度，且客户端调用非常方便。
+
+解决的问题：降低访问复杂系统内部的复杂度，降低子系统和客户端的耦合度。
+
+优点：
+
+1. 减少了系统的的互相依赖
+2. 提高灵活性
+3. 提高安全性
+
+
+
+缺点：不符合开闭原则，要改动时需要改动外观类。
+
+
+
+**Facade(外观角色)：**为调用方, 定义简单的调用接口。
+
+**SubSystem(子系统角色)：**功能提供者。指提供功能的类群（模块或子系统）。
+
+![image-20221209010616365](https://test-1309023885.cos.ap-guangzhou.myqcloud.com/typora/image-20221209010616365.png)
+
+```go
+//外观模式
+//其实就是通过提供一个接口将多个类整合在一起
+
+//举例子：喝茶需要烧水、茶具、不同的茶叶
+
+//这里是是外观角色
+type DrinkTea struct {
+	gt GreenTea
+	bt BlackTea
+	bw Water
+	ts TeaSet
+}
+
+//通过不同的方法来组合不同的类
+func (dt *DrinkTea) DrinkBlackTea() {
+	fmt.Println("来喝红茶")
+	dt.bw.BoilWater()
+	dt.ts.PutCup()
+	dt.bt.tea()
+}
+
+func (dt *DrinkTea) DrinkGreenTea() {
+	fmt.Println("来喝绿茶")
+	dt.bw.BoilWater()
+	dt.ts.PutCup()
+	dt.gt.tea()
+}
+
+//以下是子系统类
+//绿茶
+type GreenTea struct {
+}
+
+func (tea *GreenTea) tea() {
+	fmt.Println("放入绿茶")
+}
+
+//红茶
+type BlackTea struct {
+}
+
+func (tea *BlackTea) tea() {
+	fmt.Println("放入红茶")
+}
+
+type Water struct {
+}
+
+func (water *Water) BoilWater() {
+	fmt.Println("起锅烧水")
+}
+
+type TeaSet struct {
+}
+
+func (ts *TeaSet) PutCup() {
+	fmt.Println("放好茶具")
+}
+
+func main() {
+	dt := new(DrinkTea)
+	dt.DrinkBlackTea()
+	fmt.Println()
+	dt.DrinkGreenTea()
+}
+
+///////////////////////////////
+来喝红茶
+起锅烧水
+放好茶具
+放入红茶
+
+来喝绿茶
+起锅烧水
+放好茶具
+放入绿茶
+```
+
