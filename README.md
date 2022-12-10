@@ -1,4 +1,10 @@
 # 设计模式
+>开闭原则
+由Bertrand Meyer提出的开闭原则（Open Closed Principle）是指，软件应该对扩展开放，而对修改关闭。这里的意思是在增加新功能的时候，能不改代码就尽量不要改，如果只增加代码就完成了新功能，那是最好的。
+
+>里氏替换原则
+里氏替换原则是Barbara Liskov提出的，这是一种面向对象的设计原则，即如果我们调用一个父类的方法可以成功，那么替换成子类调用也应该完全可以运行。
+
 
 ## 创建 Creational Pattern
 
@@ -818,6 +824,65 @@ func main() {
 
 
 ### 命令模式*
+
+
+命令模式将一个请求封装成有一个对象，从而可以用不同的请求对客户进行参数化。
+
+其实是把函数封装成对象，系统能对对象进行各种操作，如排队执行、记录日志、撤销等。
+
+
+
+优点：可以将请求者和接受者完全解耦，发送者与接受者没有直接引用关系，发送请求的对象只需要知道如何发送请求。
+
+
+
+```go
+//比如说游戏中的操作命令,可以将客户端发送的命令被服务端存储起来，服务端有单线程处理这些请求。
+
+//定义命令接口
+type Command interface {
+	Execute()
+}
+
+//移动
+type Move struct {
+}
+
+func (m *Move) Execute() {
+	fmt.Println("移动")
+}
+
+type Attack struct {
+}
+
+func (a *Attack) Execute() {
+	fmt.Println("攻击")
+}
+
+func main() {
+	CommandList := make([]Command, 0)
+
+	CommandList = append(CommandList, new(Attack))
+	CommandList = append(CommandList, new(Move))
+	CommandList = append(CommandList, new(Move))
+	CommandList = append(CommandList, new(Move))
+	CommandList = append(CommandList, new(Attack))
+	
+    //进一步还可以设计一个类专门接受命令，然后有各种对其的操作方法
+	for _, i := range CommandList {
+		i.Execute()
+	}
+}
+
+
+////////////////////
+攻击
+移动
+移动
+移动
+攻击
+```
+
 
 
 
