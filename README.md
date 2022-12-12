@@ -825,6 +825,85 @@ func main() {
 
 ### 观察者模式*
 
+在一对多系统中，当一个对象的而改变将会导致一个或者多个其他对象发生改变时，我们可以使用观察者模式创建一个链式触发机制，目标对象来维护观察者列表，然后自身发生变化后通过notify方法依次通知每个观察者执行自己的业务逻辑方法。
+
+
+
+> 优点
+
+1. 表示层和数据逻辑层的分离，定义了稳定的消息更新传递机制
+2. 观察者模式支持广播通信，观察目标会向已注册的观察对象发送通知。
+3. 满足开闭原则，增加新的具体观察者无需修改原有系统代码
+
+
+
+> 缺点
+
+1. 一个观察目标有多个观察者，通知所有的观察者将会花费很多时间
+2. 观察者和观察目标之间如果存在循环依赖，可能会导致循环调用，以至于系统崩溃（观察目标通知观察者，观察者又调用观察目标继续通知观察者）
+3. 观察者不知道目标怎么变化的，只知道目标发生了变化
+
+
+
+```go
+//观察者模式 由观察对象通知观察者
+
+//抽象层
+//定义抽象观察者
+type Observer interface {
+	Updata()
+}
+
+//定义抽象观察对象
+type Subject interface {
+	Add()
+	Notify()
+}
+
+//实现层
+type Soldier1 struct {
+}
+
+func (*Soldier1) Updata() {
+	fmt.Println("1号准备战斗")
+}
+
+type Soldier2 struct {
+}
+
+func (*Soldier2) Updata() {
+	fmt.Println("2号准备战斗")
+}
+
+//观察对象
+type Sentinel struct {
+	//内部维护一个列表
+	SoldierList []Observer
+}
+
+func (S *Sentinel) Add(O Observer) {
+	S.SoldierList = append(S.SoldierList, O)
+}
+
+func (S *Sentinel) Notify() {
+	for _, v := range S.SoldierList {
+		v.Updata()
+	}
+}
+
+func main() {
+	s := &Sentinel{}
+	s.Add(&Soldier1{})
+	s.Add(&Soldier2{})
+
+	s.Notify()
+
+}
+///////////////////
+1号准备战斗
+2号准备战斗
+```
+
 
 
 
